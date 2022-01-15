@@ -14,19 +14,15 @@ class WebSocketUser(User):
 
     def connect(self, host: str, header: list=None):
         # This may need reformatting of the address
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            self.socket = s
-            self.socket.connect((HOST, PORT))
-            self.socket.sendall(b"Hello world client")
-            logging.debug(f"Sent message on socket {s}")
-            gevent.spawn(self.receive_loop)
+        gevent.spawn(self.receive_loop)
 
     def on_message(self, message):
         # Time the message and return the time
         current_timestamp = time.time()
         
         # Parse message body to get the timestamp
-        name = message
+        name = "socket send"
+        response_time = current_timestamp - time.time()
 
         # send an event that we recieved a message
         self.environment.events.request.fire(
@@ -42,14 +38,16 @@ class WebSocketUser(User):
         # receive data: https://docs.python.org/3/library/socket.html#socket.socket.recv
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                message = b"Hello work client"
                 s.connect((HOST, PORT))
+                s.sendall(message)
                 message = s.recv(BUF_SIZE)
                 logging.debug(f"Recieved: {message} on socket {s}")
                 self.on_message(message)
 
     def send(self, body, name=None, context={}):
         # https://github.com/SvenskaSpel/locust-plugins/blob/master/locust_plugins/users/socketio.py#L102
-        self.socket.sendall(message)
+        self.socket.sendall(body)
 
         self.environment.events.request.fire(
             request_type="tx",
