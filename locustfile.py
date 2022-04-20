@@ -1,7 +1,7 @@
 import socket
 import time
 import json
-from locust import task, User, between
+from locust import task, HttpUser, between
 import gevent
 import logging
 
@@ -9,12 +9,12 @@ HOST = 'localhost'
 PORT = 8080
 BUF_SIZE = 64
 
-class WebSocketUser(User):
+class WebSocketUser(HttpUser):
     abstract = True
 
-    def connect(self, host: str, header: list=None):
+    def connect(self, url: str, header: list=None):
         # This may need reformatting of the address
-        gevent.spawn(self.receive_loop)
+        gevent.spawn(self.receive_loop(url))
 
     def context(self):
         return {}
@@ -42,7 +42,7 @@ class WebSocketUser(User):
             context=self.context()
         )
 
-    def receive_loop(self):
+    def receive_loop(self, url):
         # receive data: https://docs.python.org/3/library/socket.html#socket.socket.recv
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -81,10 +81,33 @@ class WebSocketUser(User):
         )
 
 class SimpleWebSocketWriter(WebSocketUser):
-    @task
-    def task(self):
-        self.value = None
-        self.connect('localhost:8080')
+    wait_time = between(10, 300)
+    host = "http://localhost:8000"
 
-        while not self.value:
-            time.sleep(0.1)
+    @task
+    def connect(self):
+        # Make a request to the register endpoint
+        register_result = self.client.get("/register")
+        print(register_result)
+        print(f"response body: {register_result.json()}")
+        ws_url = register_result.json()["url"]
+        self.host = "http://127.0.0.1:8000/"
+        self.client.base_url = "ws://127.0.0.1:8000/"
+        path = ws_url[20:] # TODO CWS: magic number
+        print(f"PATH: {path}")
+        
+        # # Send an upgrade request to the ws endpoint
+        response = self.client.request("GET", path, headers={
+            "Sec-WebSocket-Version": "13",
+            "Sec-WebSocket-Key": "JsuW3srSODh+N6kyxu7WzQ==",
+            "Connection": "Upgrade",
+            "Upgrade": "websocket",
+            "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
+            "Host": "127.0.0.1:8000",
+        })
+        # TODO: create a transport adapter, or just use the socket library above??
+        # https://docs.python-requests.org/en/latest/user/advanced/
+        print(f"ws upgrade response: {response.json()}")
+        
+        # Send ws requests as a message...somehow
+
