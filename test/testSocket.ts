@@ -1,6 +1,7 @@
 import MutiplayerServerConnection from "..";
 
-export default () => {
+const test = () => {
+    console.log("init test ");
     let subscribe = (connection: MutiplayerServerConnection, topic: string) => {
         connection.subscribe(topic, (message) => {
             console.log(`Received message: ${message}`);
@@ -21,5 +22,6 @@ export default () => {
         .catch((error) => {
                 console.log(`Registration error: userId: ${connection.userId}`)
         })
-
 }
+
+test();

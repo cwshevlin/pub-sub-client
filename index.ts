@@ -30,12 +30,13 @@ export default class MutiplayerServerConnection {
     }
 
     async register(): Promise<boolean> {
-        const response = await fetch(`https://${this.baseUrl}/register`)
+        const url = `http://${this.baseUrl}/register`
+        const response = await fetch(url);
         return this._socketConnect(response.json()["url"]);
     }
 
     async unregister(): Promise<JSON> {
-        const response = await fetch(`https://${this.baseUrl}/register`)
+        const response = await fetch(`http://${this.baseUrl}/register`)
         return response.json();
     }
 
@@ -66,6 +67,7 @@ export default class MutiplayerServerConnection {
             "topic": topic,
             "message": message
         }
+        console.log("set", topic, message)
         return this.socket?.send(JSON.stringify(data));
     }
 
@@ -90,7 +92,7 @@ export default class MutiplayerServerConnection {
 
     removeFromCollection(topic: string, message: string) {
         let data = {
-            "action": "AddToCollection",
+            "action": "RemoveFromCollection",
             "user_id": this.userId,
             "topic": topic,
             "message": message
